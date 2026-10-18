@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0F766E" />
+    <meta name="description" content="A modern daily task planner with streak tracking, themes, and more" />
+    <title>Daily Planner</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="manifest" href="manifest.json" />
+    <link rel="icon" type="image/svg+xml"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%232c3e50' width='192' height='192' rx='32'/><text x='50%' y='50%' font-size='120' font-weight='bold' fill='%23ffffff' text-anchor='middle' dominant-baseline='central'>✓</text></svg>" />
+  </head>
+  <body>
+    <!-- Animated background blobs -->
+    <div class="bg-decoration">
+      <div class="blob blob-1"></div>
+      <div class="blob blob-2"></div>
+      <div class="blob blob-3"></div>
+    </div>
+
+    <div class="app-shell" id="appContainer">
+      <!-- ===== TOP BAR ===== -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <div class="app-logo">
+            <span class="logo-icon">✓</span>
+          </div>
+          <h1 class="app-title">Daily Planner</h1>
+        </div>
+        <div class="topbar-center">
+          <div class="topbar-stats">
+            <div class="mini-stat" title="Current streak">
+              <span class="mini-stat-icon">🔥</span>
+              <span class="mini-stat-val" id="currentStreak">0</span>
+              <span class="mini-stat-lbl">Streak</span>
+            </div>
+            <div class="mini-stat" title="Longest streak">
+              <span class="mini-stat-icon">🏆</span>
+              <span class="mini-stat-val" id="longestStreak">0</span>
+              <span class="mini-stat-lbl">Best</span>
+            </div>
+            <div class="mini-stat" title="Today's completion">
+              <span class="mini-stat-icon">📊</span>
+              <span class="mini-stat-val" id="todayProgress">0%</span>
+              <span class="mini-stat-lbl">Done</span>
+            </div>
+          </div>
+        </div>
+        <div class="topbar-right">
+          <button type="button" class="topbar-btn" id="settingsToggle" title="Settings">⚙️</button>
+        </div>
+      </header>
+
+      <!-- Global Messages -->
+      <div class="message-container" id="messageContainer" aria-live="polite"></div>
+
+      <!-- ===== SETTINGS DRAWER ===== -->
+      <section class="settings-panel hidden" id="settingsPanel">
+        <div class="settings-header">
+          <h3>⚙️ Settings</h3>
+          <button type="button" class="settings-close" id="settingsClose">✕</button>
+        </div>
+        <div class="settings-body">
+          <div class="settings-grid">
+            <div class="setting-group">
+              <label class="setting-label">Theme</label>
+              <div class="theme-options" id="themeOptions">
+                <button type="button" class="theme-btn active" data-theme="light" title="Light">
+                  <span class="theme-preview light-preview"></span><span>Light</span>
+                </button>
+                <button type="button" class="theme-btn" data-theme="dark" title="Dark">
+                  <span class="theme-preview dark-preview"></span><span>Dark</span>
+                </button>
+                <button type="button" class="theme-btn" data-theme="ocean" title="Ocean">
+                  <span class="theme-preview ocean-preview"></span><span>Ocean</span>
+                </button>
+                <button type="button" class="theme-btn" data-theme="forest" title="Forest">
+                  <span class="theme-preview forest-preview"></span><span>Forest</span>
+                </button>
+                <button type="button" class="theme-btn" data-theme="sunset" title="Sunset">
+                  <span class="theme-preview sunset-preview"></span><span>Sunset</span>
+                </button>
+              </div>
+            </div>
+            <div class="setting-group">
+              <label class="setting-label">Accent Color</label>
+              <div class="accent-options" id="accentOptions">
+                <button type="button" class="accent-btn" data-accent="#6c5ce7" style="--accent:#6c5ce7" title="Purple"></button>
+                <button type="button" class="accent-btn" data-accent="#3498db" style="--accent:#3498db" title="Blue"></button>
+                <button type="button" class="accent-btn active" data-accent="#0f766e" style="--accent:#0f766e" title="Teal"></button>
+                <button type="button" class="accent-btn" data-accent="#e74c3c" style="--accent:#e74c3c" title="Red"></button>
+                <button type="button" class="accent-btn" data-accent="#27ae60" style="--accent:#27ae60" title="Green"></button>
+                <button type="button" class="accent-btn" data-accent="#f39c12" style="--accent:#f39c12" title="Orange"></button>
+                <button type="button" class="accent-btn" data-accent="#fd79a8" style="--accent:#fd79a8" title="Pink"></button>
+              </div>
+            </div>
+            <div class="setting-group">
+              <label class="setting-label">Categories</label>
+              <div class="categories-manager" id="categoriesManager">
+                <div class="categories-list" id="categoriesList"></div>
+                <div class="add-category-row">
+                  <input type="text" id="newCategoryInput" placeholder="New category..." maxlength="20" />
+                  <input type="color" id="newCategoryColor" value="#3498db" />
+                  <button type="button" id="addCategoryBtn">+</button>
+                </div>
+              </div>
+            </div>
+            <div class="setting-group">
+              <div class="setting-row">
+                <label class="setting-label" for="streakThreshold">Streak Threshold</label>
+                <div class="setting-control">
+                  <input type="range" id="streakThreshold" min="50" max="100" step="10" value="80" />
+                  <span id="streakThresholdValue">80%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== MAIN DASHBOARD ===== -->
+      <main class="dashboard">
+        <!-- LEFT PANEL: Date + Stats + Week -->
+        <aside class="panel panel-left">
+          <!-- Date Navigator -->
+          <div class="card date-card">
+            <div class="date-nav-row">
+              <button type="button" id="prevBtn" class="nav-arrow-btn" aria-label="Previous day">‹</button>
+              <div class="date-hero" id="dateDisplay" role="button" tabindex="0" title="Click to open calendar">
+                <span class="date-hero-month" id="monthDisplay"></span>
+                <span class="date-hero-day" id="currentDate"></span>
+                <span class="date-hero-weekday" id="dayOfWeek"></span>
+                <span class="date-hero-hint">📅 View Calendar</span>
+              </div>
+              <button type="button" id="nextBtn" class="nav-arrow-btn" aria-label="Next day">›</button>
+            </div>
+            <button type="button" id="todayBtn" class="today-pill">Today</button>
+          </div>
+
+          <!-- Week Overview -->
+          <div class="card week-card">
+            <h3 class="card-title">This Week</h3>
+            <div class="week-stats-row">
+              <div class="week-stat-box">
+                <span class="ws-val" id="weekAvg">0%</span>
+                <span class="ws-lbl">Avg</span>
+              </div>
+              <div class="week-stat-box">
+                <span class="ws-val" id="weekCompleted">0</span>
+                <span class="ws-lbl">Done</span>
+              </div>
+              <div class="week-stat-box">
+                <span class="ws-val" id="weekTotal">0</span>
+                <span class="ws-lbl">Total</span>
+              </div>
+            </div>
+            <div class="week-day-indicators" id="weekDayIndicators"></div>
+          </div>
+
+          <!-- Quick Actions -->
+          <div class="card actions-card">
+            <h3 class="card-title">Actions</h3>
+            <div class="quick-actions">
+              <button type="button" id="exportBtn" class="qa-btn">📥 Export</button>
+              <button type="button" id="importBtn" class="qa-btn">📤 Import</button>
+              <button type="button" id="clearDayBtn" class="qa-btn qa-danger">🗑️ Clear Day</button>
+            </div>
+            <input type="file" id="importFile" accept=".json" class="hidden-input" />
+          </div>
+        </aside>
+
+        <!-- RIGHT PANEL: Tasks -->
+        <section class="panel panel-right">
+          <!-- Add Task Form -->
+          <form class="card task-form-card" id="taskForm" aria-label="Add new task">
+            <div class="task-form-main">
+              <label for="taskInput" class="visually-hidden">Task input</label>
+              <input type="text" id="taskInput" class="task-input-field" placeholder="✍️ What do you need to do?" required maxlength="200" />
+              <button type="submit" id="addBtn" class="add-task-btn" disabled>Add</button>
+            </div>
+            <div class="task-form-options">
+              <div class="form-option">
+                <label for="taskPriority" class="fo-label">Priority</label>
+                <select id="taskPriority" class="fo-select">
+                  <option value="normal">Normal</option>
+                  <option value="low">Low</option>
+                  <option value="high">High</option>
+                  <option value="urgent">Urgent</option>
+                </select>
+              </div>
+              <div class="form-option">
+                <label for="taskCategory" class="fo-label">Category</label>
+                <select id="taskCategory" class="fo-select">
+                  <option value="">None</option>
+                </select>
+              </div>
+              <button type="button" id="copyPrevBtn" class="copy-prev-btn">📋 Copy Yesterday</button>
+            </div>
+          </form>
+
+          <!-- Task List -->
+          <div class="card tasks-card">
+            <div class="tasks-header">
+              <h3 class="card-title" id="taskCount">Tasks (0)</h3>
+              <div class="tasks-toolbar">
+                <div class="filter-pills">
+                  <button type="button" class="filter-pill active" data-filter="all">All</button>
+                  <button type="button" class="filter-pill" data-filter="active">Active</button>
+                  <button type="button" class="filter-pill" data-filter="completed">Done</button>
+                </div>
+                <select id="sortSelect" class="sort-dropdown">
+                  <option value="default">Default</option>
+                  <option value="priority">Priority</option>
+                  <option value="category">Category</option>
+                  <option value="alpha">A-Z</option>
+                </select>
+              </div>
+            </div>
+            <div class="task-progress-track">
+              <div class="task-progress-bar" id="taskProgressFill"></div>
+            </div>
+            <ul class="task-list" id="taskList" aria-live="polite" aria-label="Task list"></ul>
+            <p id="emptyState" class="empty-state hidden-element" aria-live="polite" role="status">
+              No tasks for this day. Add one above! ☝️
+            </p>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <!-- ===== CALENDAR OVERLAY ===== -->
+    <div class="overlay hidden" id="calendarOverlay">
+      <div class="overlay-modal cal-modal">
+        <div class="modal-top-bar">
+          <button type="button" class="modal-nav-btn" id="calPrevMonth">‹</button>
+          <h2 id="calMonthTitle" class="modal-title"></h2>
+          <button type="button" class="modal-nav-btn" id="calNextMonth">›</button>
+          <button type="button" class="modal-close" id="calCloseBtn">✕</button>
+        </div>
+        <div class="cal-weekday-row">
+          <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+        </div>
+        <div class="cal-grid" id="calDaysGrid"></div>
+        <div class="cal-legend">
+          <span class="legend-item"><span class="legend-dot dot-empty"></span>No tasks</span>
+          <span class="legend-item"><span class="legend-dot dot-low"></span>&lt;33%</span>
+          <span class="legend-item"><span class="legend-dot dot-med"></span>33-66%</span>
+          <span class="legend-item"><span class="legend-dot dot-high"></span>67-99%</span>
+          <span class="legend-item"><span class="legend-dot dot-full"></span>100%</span>
+        </div>
+        <button type="button" class="modal-primary-btn" id="calTodayBtn">Go to Today</button>
+      </div>
+    </div>
+
+    <!-- ===== EVENT DETAIL OVERLAY ===== -->
+    <div class="overlay hidden" id="eventOverlay">
+      <div class="overlay-modal event-modal">
+        <div class="modal-top-bar">
+          <h2 id="eventDateTitle" class="modal-title"></h2>
+          <button type="button" class="modal-close" id="eventCloseBtn">✕</button>
+        </div>
+        <div class="event-stats-row" id="eventStats"></div>
+        <div class="event-tasks" id="eventTaskList"></div>
+        <div class="event-bottom">
+          <button type="button" class="modal-primary-btn" id="eventGoToDate">📝 Edit Tasks for This Day</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
